@@ -1,8 +1,10 @@
 module HermiteUtils
 
 using FastGaussQuadrature
+using LinearAlgebra
 
-export hermitepoints, hermite_vandermonde, He_n, He_zero_to_n
+export hermitepoints, hermiteweights, hermite_vandermonde, weighted_hermite_vandermonde,
+    He_n, He_zero_to_n, hermiteanalysis, hermitesynthesis
 
 """
     hermitepoints(n)
@@ -10,7 +12,9 @@ export hermitepoints, hermite_vandermonde, He_n, He_zero_to_n
 Returns a vector of the Gauss-Hermite quadrature points of order n.
 These are exactly the roots of He_n.
 """
-hermitepoints(n) = gausshermite(n)[1]
+hermitepoints(n) = gausshermite(n)[1] .* sqrt(2)
+
+hermiteweights(n) = gausshermite(n)[2] / sqrt(π)
 
 """
     hermite_vandermonde(n, [x = hermitepoints(n)])
@@ -34,6 +38,43 @@ function hermite_vandermonde(n, x; normalized=true)
         end
     end
     V'
+end
+
+function weighted_hermite_vandermonde(n; normalized=true)
+    V = Array{Float64}(undef, n, n)
+    x = hermitepoints(n)
+
+    sqrt_factorial = vcat(1.0, cumprod(1 .* sqrt.(1:n-1)))
+
+    for k in 1:n
+        V[k, :] = FastGaussQuadrature.hermpoly_rec(0:n-1, sqrt(2) * x[k])
+        if !normalized
+            V[k, :] .*= sqrt_factorial
+        end
+    end
+    V'
+end
+
+"""
+    hermiteanalysis(n)
+
+Returns a matrix which computes the coefficients f_i in the following expansion:
+
+f = ∑ exp(-x^2/2) He_i(x) f_i
+
+The function values f must be evaluated at hermitepoints(n).
+"""
+function hermiteanalysis(n)
+    x = hermitepoints(n)
+    w = hermiteweights(n)
+
+    hermite_vandermonde(n) * Diagonal(w .* exp.(x.^2 ./ 2))
+end
+
+function hermitesynthesis(n)
+    x = hermitepoints(n)
+
+    Diagonal(exp.(-x.^2 ./ 2)) * hermite_vandermonde(n)'
 end
 
 """
