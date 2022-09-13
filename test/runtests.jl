@@ -32,4 +32,9 @@ using LinearAlgebra
 
     @test ha * f ≈ sqrt(6) * e4
     @test hs * sqrt(6) * e4 ≈ f
+
+    y = -5.0:0.2:5.0
+    fy = (y.^3 .- 3y) .* exp.(-y.^2 ./ 2)
+    hs = hermitesynthesis(100, y)
+    @test hs * sqrt(6) * e4 ≈ fy
 end

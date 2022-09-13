@@ -29,9 +29,9 @@ function hermite_vandermonde(n; normalized=true)
 end
 
 function hermite_vandermonde(n, x; normalized=true)
-    V = Array{Float64}(undef, n, n)
+    V = Array{Float64}(undef, length(x), n)
     sqrt_factorial = vcat(1.0, cumprod(1 .* sqrt.(1:n-1)))
-    for k in 1:n
+    for k in eachindex(x)
         V[k, :] = FastGaussQuadrature.hermpoly_rec(0:n-1, x[k]) * exp(x[k]^2/4)
         if !normalized
             V[k, :] .*= sqrt_factorial
@@ -71,10 +71,10 @@ function hermiteanalysis(n)
     hermite_vandermonde(n) * Diagonal(w .* exp.(x.^2 ./ 2))
 end
 
-function hermitesynthesis(n)
-    x = hermitepoints(n)
+hermitesynthesis(n) = hermitesynthesis(n, hermitepoints(n))
 
-    Diagonal(exp.(-x.^2 ./ 2)) * hermite_vandermonde(n)'
+function hermitesynthesis(n, x)
+    Diagonal(exp.(-x.^2 ./ 2)) * hermite_vandermonde(n, x)'
 end
 
 """
